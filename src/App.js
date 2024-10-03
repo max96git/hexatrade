@@ -1,9 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-
-function Home() {
-  return <h1>Welcome to Home!</h1>;
-}
+import Home from './components/Home';
 
 function App() {
   return (
