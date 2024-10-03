@@ -1,18 +1,26 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import AccountListingLoader from './AccountListingLoader'; 
+import { db, auth } from '../firebase';
+import { collection, getDocs } from 'firebase/firestore';
+import { useHistory } from 'react-router-dom';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import Listings from './Listings';
+import './Home.css';
 
 const Home = () => {
-  const [accounts, setAccounts] = useState([]);
+  const [listedAccounts, setListedAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSignup, setIsSignup] = useState(false);
+  const history = useHistory();
 
   useEffect(() => {
     const fetchAccounts = async () => {
       try {
-        const response = await fetch('/api/accounts'); 
-        const data = await response.json();
-        setAccounts(data);
+        const accountsCollection = collection(db, 'accounts');
+        const accountsSnapshot = await getDocs(accountsCollection);
+        const accountsList = accountsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setListedAccounts(accountsList);
       } catch (error) {
         console.error('Error fetching accounts:', error);
       } finally {
@@ -23,85 +31,51 @@ const Home = () => {
     fetchAccounts();
   }, []);
 
-  return (
-    <div style={styles.container}>
-      <h1>Welcome to Hexatrade</h1>
-      <div style={styles.buttonContainer}>
-        <Link to="/login" style={styles.link}>
-          <button style={styles.button}>Login</button>
-        </Link>
-        <Link to="/signup" style={styles.link}>
-          <button style={styles.button}>Signup</button>
-        </Link>
-        <Link to="/list-account" style={styles.link}>
-          <button style={styles.button}>List Account</button>
-        </Link>
-      </div>
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    try {
+      if (isSignup) {
+        await createUserWithEmailAndPassword(auth, email, password);
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
+      }
+      history.push('/dashboard');
+    } catch (error) {
+      console.error('Error during authentication:', error);
+    }
+  };
 
-      <h2 style={styles.subheading}>Available Accounts</h2>
+  return (
+    <div className="home">
+      <h1>Hexatrade</h1>
+      <form onSubmit={handleAuth}>
+        <input 
+          type="email" 
+          placeholder="Email" 
+          value={email} 
+          onChange={(e) => setEmail(e.target.value)} 
+          required 
+        />
+        <input 
+          type="password" 
+          placeholder="Password" 
+          value={password} 
+          onChange={(e) => setPassword(e.target.value)} 
+          required 
+        />
+        <button type="submit">{isSignup ? 'Sign Up' : 'Login'}</button>
+      </form>
+      <button onClick={() => setIsSignup(!isSignup)}>
+        {isSignup ? 'Already have an account? Login' : "Don't have an account? Sign Up"}
+      </button>
+
       {loading ? (
-        <AccountListingLoader />
+        <p>Loading accounts...</p>
       ) : (
-        <div style={styles.accountList}>
-          {accounts.length === 0 ? (
-            <p>No accounts available.</p>
-          ) : (
-            accounts.map((account) => (
-              <Listings key={account.id} account={account} />
-            ))
-          )}
-        </div>
+        <Listings accounts={listedAccounts} />
       )}
     </div>
   );
-};
-
-const styles = {
-  container: {
-    textAlign: 'center',
-    padding: '20px',
-    fontFamily: 'Inter, sans-serif',
-    backgroundColor: '#f0f0f0',
-    minHeight: '100vh',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-  },
-  buttonContainer: {
-    display: 'flex',
-    justifyContent: 'center',
-    marginTop: '20px',
-  },
-  link: {
-    textDecoration: 'none',
-    margin: '10px',
-  },
-  button: {
-    padding: '10px 20px',
-    border: 'none',
-    borderRadius: '5px',
-    backgroundColor: '#007BFF',
-    color: '#fff',
-    cursor: 'pointer',
-    fontSize: '16px',
-    transition: 'background-color 0.3s',
-  },
-  subheading: {
-    marginTop: '40px',
-  },
-  accountList: {
-    marginTop: '20px',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-  },
-  accountItem: {
-    border: '1px solid #ccc',
-    borderRadius: '5px',
-    padding: '15px',
-    margin: '10px',
-    width: '300px',
-  },
 };
 
 export default Home;
