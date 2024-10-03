@@ -1,57 +1,49 @@
 // src/components/Home.jsx
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { auth } from '../firebase';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import React, { useEffect, useState } from 'react';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../firebase';
 import './Home.css';
 
 const Home = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLogin, setIsLogin] = useState(true);
-  const navigate = useNavigate();
+  const [accounts, setAccounts] = useState([]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (isLogin) {
-        await signInWithEmailAndPassword(auth, email, password);
-      } else {
-        await createUserWithEmailAndPassword(auth, email, password);
+  // Fetch listed accounts from Firestore
+  useEffect(() => {
+    const fetchAccounts = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, 'accounts'));
+        const accountsList = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setAccounts(accountsList);
+      } catch (error) {
+        console.error('Error fetching accounts:', error);
       }
-      navigate('/dashboard'); // Redirect to dashboard after successful login/signup
-    } catch (error) {
-      console.error(error);
-      alert(error.message);
-    }
-  };
+    };
+
+    fetchAccounts();
+  }, []);
 
   return (
     <div className="home-container">
-      <h1>{isLogin ? 'Login' : 'Sign Up'}</h1>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <button type="submit">{isLogin ? 'Login' : 'Sign Up'}</button>
-      </form>
-      <p>
-        {isLogin ? 'Don’t have an account? ' : 'Already have an account? '}
-        <button onClick={() => setIsLogin(!isLogin)}>
-          {isLogin ? 'Sign Up' : 'Login'}
-        </button>
-      </p>
+      <h1>Listed Accounts</h1>
+      <div className="accounts-list">
+        {accounts.map((account) => (
+          <div key={account.id} className="account-card">
+            <img src={account.ImageUrl} alt={account.username} />
+            <h3>{account.username}</h3>
+            <p>Year: {account.AccountYear}</p>
+            <p>Status: {account.AccountStatus}</p>
+            {account.ListingType === 'trade' ? (
+              <p>Available for Trade</p>
+            ) : (
+              <p>Price: {account.Price}</p>
+            )}
+            <p>Description: {account.Description}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
