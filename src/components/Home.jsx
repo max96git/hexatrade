@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import AccountListingLoader from './AccountListingLoader';
+import AccountListingLoader from './AccountListingLoader'; 
+import Listings from './Listings';
 
 const Home = () => {
   const [accounts, setAccounts] = useState([]);
@@ -9,7 +10,7 @@ const Home = () => {
   useEffect(() => {
     const fetchAccounts = async () => {
       try {
-        const response = await fetch('/api/accounts');
+        const response = await fetch('/api/accounts'); 
         const data = await response.json();
         setAccounts(data);
       } catch (error) {
@@ -46,10 +47,7 @@ const Home = () => {
             <p>No accounts available.</p>
           ) : (
             accounts.map((account) => (
-              <div key={account.id} style={styles.accountItem}>
-                <h3>{account.name}</h3>
-                <p>{account.details}</p>
-              </div>
+              <Listings key={account.id} account={account} />
             ))
           )}
         </div>
