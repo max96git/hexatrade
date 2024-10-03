@@ -1,157 +1,113 @@
-import React, { useEffect, useState } from 'react';
-import { db } from '../firebase'; // Adjust the path if necessary
-import { collection, addDoc, getDocs, deleteDoc, doc } from 'firebase/firestore';
-import './Dashboard.css'; // Optional CSS for styling
+// Dashboard.jsx
+import React, { useState } from 'react';
+import { db } from './firebase';
+import { collection, addDoc } from 'firebase/firestore';
 
 const Dashboard = () => {
-  const [accounts, setAccounts] = useState([]);
-  const [username, setUsername] = useState('');
-  const [accountYear, setAccountYear] = useState('');
-  const [accountStatus, setAccountStatus] = useState('');
-  const [price, setPrice] = useState('');
-  const [listingType, setListingType] = useState('Sell'); // Default to 'Sell'
-  const [imageUrl, setImageUrl] = useState('');
-  const [tradingEnabled, setTradingEnabled] = useState(false);
-  const [description, setDescription] = useState('');
+  const [accountDetails, setAccountDetails] = useState({
+    username: '',
+    accountYear: '',
+    accountStatus: '',
+    price: '',
+    listingType: '',
+    imageUrl: '',
+    sellerId: '',
+    tradingEnabled: false,
+    description: '',
+  });
 
-  useEffect(() => {
-    const fetchAccounts = async () => {
-      try {
-        const accountsCollection = collection(db, 'accountsCollection');
-        const accountsSnapshot = await getDocs(accountsCollection);
-        const accountsList = accountsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setAccounts(accountsList);
-      } catch (error) {
-        console.error('Error fetching accounts:', error);
-      }
-    };
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setAccountDetails({ ...accountDetails, [name]: value });
+  };
 
-    fetchAccounts();
-  }, []);
-
-  const handleAddAccount = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       await addDoc(collection(db, 'accountsCollection'), {
-        username,
-        AccountYear: accountYear,
-        AccountStatus: accountStatus,
-        Price: listingType === 'Trade' ? null : price, // Set price to null for trade-only accounts
-        ListingType: listingType,
-        ImageUrl: imageUrl,
-        SellerID: '', // You can set the seller ID as needed, possibly from auth user
-        TradingEnabled: tradingEnabled,
-        Description: description,
+        ...accountDetails,
+        tradingEnabled: accountDetails.tradingEnabled === 'true',
       });
-
-      // Reset form fields
-      setUsername('');
-      setAccountYear('');
-      setAccountStatus('');
-      setPrice('');
-      setListingType('Sell');
-      setImageUrl('');
-      setTradingEnabled(false);
-      setDescription('');
-
-      // Fetch updated accounts
-      fetchAccounts();
+      alert('Account listed successfully!');
     } catch (error) {
-      console.error('Error adding account:', error);
-    }
-  };
-
-  const handleDeleteAccount = async (id) => {
-    try {
-      await deleteDoc(doc(db, 'accountsCollection', id));
-      fetchAccounts(); // Refresh the account list after deletion
-    } catch (error) {
-      console.error('Error deleting account:', error);
+      console.error('Error listing account:', error.message);
     }
   };
 
   return (
     <div className="dashboard">
-      <h1>Account Dashboard</h1>
-      <form onSubmit={handleAddAccount}>
-        <input 
-          type="text" 
-          placeholder="Username" 
-          value={username} 
-          onChange={(e) => setUsername(e.target.value)} 
-          required 
+      <h1>List an Account</h1>
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          name="username"
+          placeholder="Username"
+          value={accountDetails.username}
+          onChange={handleChange}
+          required
         />
-        <input 
-          type="number" 
-          placeholder="Account Year (2006 - present)" 
-          value={accountYear} 
-          onChange={(e) => setAccountYear(e.target.value)} 
-          min="2006" 
-          max={new Date().getFullYear()} 
-          required 
+        <input
+          type="number"
+          name="accountYear"
+          placeholder="Account Year (2006 - Present)"
+          value={accountDetails.accountYear}
+          onChange={handleChange}
+          required
         />
-        <input 
-          type="text" 
-          placeholder="Account Status" 
-          value={accountStatus} 
-          onChange={(e) => setAccountStatus(e.target.value)} 
-          required 
+        <input
+          type="text"
+          name="accountStatus"
+          placeholder="Account Status"
+          value={accountDetails.accountStatus}
+          onChange={handleChange}
+          required
         />
-        <input 
-          type="number" 
-          placeholder="Price (leave blank for trade-only)" 
-          value={price} 
-          onChange={(e) => setPrice(e.target.value)} 
-          min="0" 
+        <input
+          type="text"
+          name="price"
+          placeholder="Price (leave blank for trade only)"
+          value={accountDetails.price}
+          onChange={handleChange}
         />
-        <select 
-          value={listingType} 
-          onChange={(e) => setListingType(e.target.value)} 
+        <select
+          name="listingType"
+          value={accountDetails.listingType}
+          onChange={handleChange}
           required
         >
+          <option value="">Select Listing Type</option>
           <option value="Sell">Sell</option>
           <option value="Trade">Trade</option>
         </select>
-        <input 
-          type="text" 
-          placeholder="Image URL" 
-          value={imageUrl} 
-          onChange={(e) => setImageUrl(e.target.value)} 
+        <input
+          type="text"
+          name="imageUrl"
+          placeholder="Image URL"
+          value={accountDetails.imageUrl}
+          onChange={handleChange}
         />
-        <label>
-          Trading Enabled:
-          <input 
-            type="checkbox" 
-            checked={tradingEnabled} 
-            onChange={(e) => setTradingEnabled(e.target.checked)} 
-          />
-        </label>
-        <textarea 
-          placeholder="Description" 
-          value={description} 
-          onChange={(e) => setDescription(e.target.value)} 
+        <input
+          type="text"
+          name="sellerId"
+          placeholder="Seller ID"
+          value={accountDetails.sellerId}
+          onChange={handleChange}
         />
-        <button type="submit">Add Account</button>
+        <input
+          type="checkbox"
+          name="tradingEnabled"
+          checked={accountDetails.tradingEnabled}
+          onChange={(e) => setAccountDetails({ ...accountDetails, tradingEnabled: e.target.checked })}
+        />
+        <label>Trading Enabled</label>
+        <textarea
+          name="description"
+          placeholder="Description"
+          value={accountDetails.description}
+          onChange={handleChange}
+        />
+        <button type="submit">List Account</button>
       </form>
-
-      <h2>Listed Accounts</h2>
-      {accounts.length > 0 ? (
-        <ul>
-          {accounts.map((account) => (
-            <li key={account.id}>
-              <h3>{account.username} ({account.AccountYear})</h3>
-              <p>Status: {account.AccountStatus}</p>
-              <p>Price: {account.ListingType === 'Trade' ? 'Trade Only' : `$${account.Price}`}</p>
-              <p>Type: {account.ListingType}</p>
-              <p>Description: {account.Description}</p>
-              {account.ImageUrl && <img src={account.ImageUrl} alt={`${account.username} image`} />}
-              <button onClick={() => handleDeleteAccount(account.id)}>Delete</button>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p>No accounts listed yet.</p>
-      )}
     </div>
   );
 };
